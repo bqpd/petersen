@@ -7,7 +7,17 @@
 <style>
 
 body {
+  font-family: "Russo One";
   background: linear-gradient(0deg, rgba(8, 4, 16, 0.6), rgba(8, 4, 16, 0.6)), #080410;
+}
+
+.tip {
+  z-index:1000;
+  padding:  0.2em 1em;
+  font-size: 1.5em;
+  color: black;
+  background-color:  white;
+  pointer-events: none
 }
 
 .force {
@@ -30,7 +40,6 @@ body {
   position: fixed;
   top: 0.75em;
   left: 300px;
-  font-family: "Russo One";
   font-size: 3em;
   color: white;
 }
@@ -56,7 +65,6 @@ body {
   position: fixed;
   bottom: 0.75em;
   left: 320px;
-  font-family: "Russo One";
   color: black;
   background-color: white;
   padding: 0.2em;
@@ -76,6 +84,8 @@ body {
 <div class="note">drag circles to pin | double click to release</div>
 <script src="lib/d3.min.js"></script>
 <script src="lib/fisheye.js"></script>
+ <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+  <script type="text/javascript" src="jquery.poshytip.min.js"></script>
 <script> 
 
 var bg_idx = 0,
@@ -180,7 +190,11 @@ d3.json("fdg.json", function(error, graph) {
 
   var node = svg.selectAll(".node")
       .data(graph.nodes)
-    .enter().append("circle")
+    .enter().append("svg:a")
+        .attr("target","_blank")
+        .attr("class", "tooltip")
+        .attr('xlink:title', function(d) { return d.id.replace("_", "."); })
+    .append("circle")
       .attr("id", function(d) { return "c"+d.id })
       .attr("class", "node")
       .classed("root", function(d) {return !d.isfriend})
@@ -210,10 +224,6 @@ d3.json("fdg.json", function(error, graph) {
         }
         update_link_style()
       }).call(force.drag)
-
-
-  node.append("title")
-      .text(function(d) { return d.id.replace("_", "."); });
 
   force.on("tick", function() {
     link.each(function(d) { d.fisheye = [];
@@ -286,6 +296,20 @@ function updateWindow(){
     force.start()
 }
 window.onresize = updateWindow;
+
+// setup tooltips
+$('a.tooltip').poshytip({
+    className: 'tip',
+    followCursor: false,
+    slide: false,
+    showTimeout: 0,
+    showAniDuration: 0,
+    hideTimeout: 0,
+    hideAniDuration: 0,
+    alignX: 'left',
+    alignY: 'center',
+    offsetX: 0,
+    offsetY: 0 });
 
 });
 
