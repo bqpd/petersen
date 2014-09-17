@@ -153,7 +153,7 @@ d3.json("fdg.json", function(error, graph) {
     .data(bilinks)
     .enter().append("path")
       .attr("class", "link")
-      .style("stroke-width", function(d) { return d[d.length - 1] })
+      .style("stroke-width", function(d) { return d[d.length - 1]/2 })
 
   var update_link_style = function() {
     link.each(function(d) { d.selected = d3.select("#c"+d[0].id).attr("selected") || d3.select("#c"+d[2].id).attr("selected")
