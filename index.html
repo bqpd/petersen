@@ -176,7 +176,7 @@ d3.json("fdg.json", function(error, graph) {
     el.classed("fixed", function(d) {return d.fixed = true} )
   })
 
-  force.linkDistance(function(d) {return Math.pow(20/d.frequency, 1)})
+  force.linkDistance(function(d) {return Math.pow(20/d.frequency, 2)})
 
   var node = svg.selectAll(".node")
       .data(graph.nodes)
