@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>NAVCHART/</title>
+<link rel="shortcut icon" href="images/favicon4.png" />
+
+<link href='http://fonts.googleapis.com/css?family=Russo+One' rel='stylesheet' type='text/css'>
+<style>
+
+body {
+  background: linear-gradient(0deg, rgba(8, 4, 16, 0.6), rgba(8, 4, 16, 0.6)), #080410;
+}
+
+.force {
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3)  0%,
+                                                  rgba(255, 255, 255, 0.0) 30%);
+    border-top-right-radius: 1em;
+    border-bottom-left-radius: 1em;
+    position: absolute;
+    margin-top: 20px;
+    margin-left: 20px;
+}
+.sidebar {
+  text-align: right;
+  position: fixed;
+  left: 200px;
+  top: 1em;
+}
+
+.header {
+  position: fixed;
+  top: 0.75em;
+  left: 300px;
+  font-family: "Russo One";
+  font-size: 3em;
+  color: white;
+}
+
+.node {
+  stroke: #fff;
+  stroke-opacity: 0.3;
+  stroke-width: 2px;
+  cursor: move;
+}
+
+.link {
+  fill: none;
+  stroke-width: 2px;
+  stroke: #fff;
+}
+
+.selected {
+  stroke: #f00;
+}
+
+.note {
+  position: fixed;
+  bottom: 0.75em;
+  left: 320px;
+  font-family: "Russo One";
+  color: black;
+  background-color: white;
+  padding: 0.2em;
+  text-align: left;
+  cursor: pointer;
+}
+
+</style>
+<body>
+<div class="force"></div>
+<div class="sidebar">
+  <object type="image/svg+xml" data="images/hexlogo.svg" id="hexlogo">
+    <!-- fallback image should be loaded here, if we care -->
+  </object>
+</div>
+<div class="header">NAVCHART/</div>
+<div class="note">drag circles to pin | double click to release</div>
+<script src="lib/d3.min.js"></script>
+<script src="lib/fisheye.js"></script>
+<script> 
+
+var bg_idx = 0,
+    bg_urls = ["http://www.jpl.nasa.gov/spaceimages/images/wallpaper/PIA12835-1920x1200.jpg",
+               "http://apod.nasa.gov/apod/image/1407/ic4603_olsen_1598.jpg",
+               "http://apod.nasa.gov/apod/image/1408/shuttleapproaching_nasa_6048.jpg",
+               "http://apod.nasa.gov/apod/image/1304/earthterminator_iss002_full.jpg",
+               "http://apod.nasa.gov/apod/image/0804/ISS007-E-10807_highres.jpg",
+               "http://apod.nasa.gov/apod/image/1304/iss030e078095.jpg",
+               "http://apod.nasa.gov/apod/image/1304/soul_andersson_2048.jpg",
+               "http://apod.nasa.gov/apod/image/1004/carina08_hst_big.jpg",
+               "http://apod.nasa.gov/apod/image/1303/PIA15254_LMC2048.jpg",
+               "http://apod.nasa.gov/apod/image/1303/NGC2736_Pencil-Nebula_Bicolour_pugh.jpg",
+               "http://www.jpl.nasa.gov/spaceimages/images/wallpaper/PIA01320-1920x1200.jpg",
+               "http://www.jpl.nasa.gov/spaceimages/images/wallpaper/PIA13005-1920x1200.jpg",
+               "http://photojournal.jpl.nasa.gov/jpeg/PIA13316.jpg",
+               "http://photojournal.jpl.nasa.gov/jpeg/PIA08097.jpg"],
+  next_bg = function() {
+    document.body.style.background = "linear-gradient(rgba(8, 4, 16, 0.6), rgba(8, 4, 16, 0.6)), url("+bg_urls[bg_idx%bg_urls.length]+") no-repeat center center fixed"
+    document.body.style.backgroundSize = "cover"
+    bg_idx++ }
+
+d3.selectAll(".note").on("click", next_bg)
+
+var width = window.innerWidth - 40,
+    height = window.innerHeight - 40,
+    radius = Math.max(width, height)
+    sel_idx = 0,
+    stroke_opacity = function(d) { return d.fisheyed ? Math.max(0, Math.pow(Math.max(d[0].isfriend * d.fisheye[0].z, d.fisheye[2].z)/2 - 0.5, 5))
+                                                     : 0 },
+    minrad = 3
+
+var color = d3.scale.category20();
+
+var force = d3.layout.force()
+    .theta(0.2)
+    .gravity(0.05)
+    .friction(0.99)
+    .chargeDistance(300)
+    .size([width, height]);
+
+var svg = d3.selectAll(".force").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+var fisheye = d3.fisheye.circular()
+    .radius(300)
+    .distortion(4);
+fisheye.focus([width/2, height/2])
+
+d3.json("fdg.json", function(error, graph) {
+
+  force.charge(-0.002*Math.pow(radius, 2)/graph.nodes.slice().length)
+
+  var nodes = graph.nodes.slice(),
+      links = [],
+      bilinks = [];
+
+  graph.links.forEach(function(link) {
+    var s = nodes[link.source],
+        t = nodes[link.target],
+        i = {}; // intermediate node
+    nodes.push(i);
+    links.push({source: s, target: i},
+               {source: i, target: t});
+    bilinks.push([s, i, t, link.frequency]);
+  });
+
+  force
+      .nodes(nodes)
+      .links(links)
+      .start();
+
+  var link = svg.selectAll(".link")
+    .data(bilinks)
+    .enter().append("path")
+      .attr("class", "link")
+      .style("stroke-width", function(d) { return d[d.length - 1] })
+
+  var update_link_style = function() {
+    link.each(function(d) { d.selected = d3.select("#c"+d[0].id).attr("selected") || d3.select("#c"+d[2].id).attr("selected")
+                            d.bothselected = d3.select("#c"+d[0].id).attr("selected") && d3.select("#c"+d[2].id).attr("selected") })
+        .style("stroke-opacity", function(d) { return Math.max(d.selected ? (1+d[0].isfriend+6*d.bothselected)/8 : 0, stroke_opacity(d)) })
+        .style("stroke", function(d) {
+          return d.selected ? d.selected : "#fff"})
+  }
+
+  force.drag().on("dragstart", function(d) {
+   var el = d3.select(this)
+    
+    if (el.attr("selected") === null) {
+      el.each(function() {d.selected = true})
+        .attr("selected", color(sel_idx))
+        .style("stroke", color(sel_idx))
+        .style("stroke-opacity", 1)
+      sel_idx++
+    }
+    el.classed("fixed", function(d) {return d.fixed = true} )
+  })
+
+  force.linkDistance(function(d) {return Math.pow(20/d.frequency, 1)})
+
+  var node = svg.selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("circle")
+      .attr("id", function(d) { return "c"+d.id })
+      .attr("class", "node")
+      .classed("root", function(d) {return !d.isfriend})
+      .style("fill", function(d) { 
+                      return color(d.id.substr(0,d.id.indexOf("_"))); })
+      .on("dblclick", function(d) {
+          var el = d3.select(this)
+          el.classed("fixed", function(d) { return d.fixed = false})
+          d.selected = false
+          el.attr("selected", null)
+            .style("stroke", "#fff")
+            .style("stroke-opacity", null)
+      })
+      .on("click", function(d) {
+        var el = d3.select(this)
+        if (el.attr("selected") === null) {
+          d.selected = true
+          el.attr("selected", color(sel_idx))
+            .style("stroke", color(sel_idx))
+            .style("stroke-opacity", 1)
+          sel_idx++
+        } else if (!d.fixed) {
+          d.selected = false
+          el.attr("selected", null)
+            .style("stroke", "#fff")
+            .style("stroke-opacity", null)
+        }
+        update_link_style()
+      }).call(force.drag)
+
+
+  node.append("title")
+      .text(function(d) { return d.id.replace("_", "."); });
+
+  force.on("tick", function() {
+    link.each(function(d) { d.fisheye = [];
+                            d.fisheye[0] = fisheye(d[0]);
+                            d.fisheye[1] = fisheye(d[1]);
+                            d.fisheye[2] = fisheye(d[2]); 
+                            d.fisheyed = (d[0].isfriend * d.fisheye[0].z + d.fisheye[2].z > 2)})
+        .attr("d", function(d) {
+            return d.fisheyed || d.selected ?  "M" + d.fisheye[0].x + "," + d.fisheye[0].y
+                               + "S" + d.fisheye[1].x + "," + d.fisheye[1].y
+                               + " " + d.fisheye[2].x + "," + d.fisheye[2].y
+                              :  "M" + d[0].x + "," + d[0].y
+                               + "S" + d[1].x + "," + d[1].y
+                               + " " + d[2].x + "," + d[2].y;
+            })
+    
+    update_link_style()
+     
+
+    node.each(function(d) { d.fisheye = fisheye(d);
+                            d.fisheyed = (d.fisheye.z !== 1); })
+      .attr("cx", function(d) { return d.fisheyed ? d.fisheye.x : d.x })
+      .attr("cy", function(d) { return d.fisheyed ? d.fisheye.y : d.y })
+      .attr("r", function(d) { if (d.fisheyed) return Math.min(40, Math.max(d.isfriend ? (d.selected ? 10 : minrad) : 40, 40*Math.pow((d.fisheye.z)/2 - 0.5, 3)))
+                               else return d.isfriend ? (d.selected ? 10 : minrad) : 40 });
+    });
+
+  svg.on("mouseenter", function() {
+    stroke_opacity = function(d) { return d.fisheyed ? Math.max(0, Math.pow(Math.max(d[0].isfriend * d.fisheye[0].z, d.fisheye[2].z)/2 - 0.5, 5))
+                                                     : 0 }
+    minrad = 3
+    if (force.alpha() === 0) force.alpha(0.01)
+    fisheye.focus(d3.mouse(this))
+
+    var d = nodes[0]
+    var el = d3.selectAll(".root")
+    d.selected = false
+    el.attr("selected", null)
+      .style("stroke", "#fff")
+      .style("stroke-opacity", null)
+   });
+
+  svg.on("mousemove", function() {
+    fisheye.focus(d3.mouse(this));
+    if (force.alpha() === 0) force.alpha(0.01)
+  })
+
+  svg.on("mouseleave", function() {
+    stroke_opacity = function(d) { return 0.3 * d[0].isfriend }
+    minrad = 0
+    
+      var el = d3.selectAll(".root")
+      el.attr("selected", color(sel_idx))
+        .style("stroke", color(sel_idx))
+        .style("stroke-opacity", 1)
+
+    fisheye.focus([-1000, -1000]);
+    if (force.alpha() === 0) force.alpha(0.01)
+  })
+
+function updateWindow(){
+    var w = window.innerWidth - 40,
+        h = window.innerHeight - 40,
+        r = Math.max(w, h)
+
+    svg.attr("transform", "translate(" + (w-width) / 2 + "," + (h-height) / 2 + ")")
+
+    svg.attr("width", w).attr("height", h);
+    force.charge(-0.002*Math.pow(r, 2)/graph.nodes.slice().length)
+    force.start()
+}
+window.onresize = updateWindow;
+
+});
+
+</script>
