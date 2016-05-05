@@ -1,0 +1,30 @@
+{"nodes": [
+        {"isfriend": 1, "id": "red_0"},
+        {"isfriend": 1, "id": "red_1"},
+        {"isfriend": 1, "id": "red_2"},
+        {"isfriend": 1, "id": "red_3"},
+        {"isfriend": 1, "id": "blue_0"},
+        {"isfriend": 1, "id": "blue_1"},
+        {"isfriend": 1, "id": "blue_2"},
+        {"isfriend": 1, "id": "green_0"},
+        {"isfriend": 1, "id": "green_1"},
+        {"isfriend": 1, "id": "green_2"}
+    ],
+    "links": [
+        {"source": 0, "frequency": 8, "target": 4},
+        {"source": 0, "frequency": 8, "target": 5},
+        {"source": 0, "frequency": 8, "target": 6},
+        {"source": 1, "frequency": 8, "target": 7},
+        {"source": 1, "frequency": 8, "target": 8},
+        {"source": 1, "frequency": 8, "target": 6},
+        {"source": 2, "frequency": 8, "target": 8},
+        {"source": 2, "frequency": 8, "target": 9},
+        {"source": 2, "frequency": 8, "target": 4},
+        {"source": 3, "frequency": 8, "target": 9},
+        {"source": 3, "frequency": 8, "target": 7},
+        {"source": 3, "frequency": 8, "target": 5},
+        {"source": 4, "frequency": 8, "target": 7},
+        {"source": 5, "frequency": 8, "target": 8},
+        {"source": 6, "frequency": 8, "target": 9}
+    ]
+}

@@ -86,7 +86,7 @@ body {
 <script src="lib/fisheye.js"></script>
  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
   <script type="text/javascript" src="jquery.poshytip.min.js"></script>
-<script> 
+<script>
 
 var bg_idx = 0,
     bg_urls = ["http://www.jpl.nasa.gov/spaceimages/images/wallpaper/PIA12835-1920x1200.jpg",
@@ -132,11 +132,11 @@ var svg = d3.selectAll(".force").append("svg")
     .attr("height", height);
 
 var fisheye = d3.fisheye.circular()
-    .radius(300)
+    .radius(100)
     .distortion(4);
 fisheye.focus([width/2, height/2])
 
-d3.json("fdg.json", function(error, graph) {
+d3.json("ptg.json", function(error, graph) {
 
   force.charge(-0.002*Math.pow(radius, 2)/graph.nodes.slice().length)
 
@@ -170,16 +170,17 @@ d3.json("fdg.json", function(error, graph) {
                             d.bothselected = d3.select("#c"+d[0].id).attr("selected") && d3.select("#c"+d[2].id).attr("selected") })
         .style("stroke-opacity", function(d) { return Math.max(d.selected ? (1+d[0].isfriend+6*d.bothselected)/8 : 0, stroke_opacity(d)) })
         .style("stroke", function(d) {
-          return d.selected ? d.selected : "#fff"})
+             return "#fff"})
+        //   return d.selected ? d.selected : "#fff"})
   }
 
   force.drag().on("dragstart", function(d) {
    var el = d3.select(this)
-    
+
     if (el.attr("selected") === null) {
       el.each(function() {d.selected = true})
         .attr("selected", color(sel_idx))
-        .style("stroke", color(sel_idx))
+        // .style("stroke", color(sel_idx))
         .style("stroke-opacity", 1)
       sel_idx++
     }
@@ -198,8 +199,8 @@ d3.json("fdg.json", function(error, graph) {
       .attr("id", function(d) { return "c"+d.id })
       .attr("class", "node")
       .classed("root", function(d) {return !d.isfriend})
-      .style("fill", function(d) { 
-                      return color(d.id.substr(0,d.id.indexOf("_"))); })
+      .style("fill", function(d) {
+                      return d.id.substr(0,d.id.indexOf("_")); })
       .on("dblclick", function(d) {
           var el = d3.select(this)
           el.classed("fixed", function(d) { return d.fixed = false})
@@ -229,7 +230,7 @@ d3.json("fdg.json", function(error, graph) {
     link.each(function(d) { d.fisheye = [];
                             d.fisheye[0] = fisheye(d[0]);
                             d.fisheye[1] = fisheye(d[1]);
-                            d.fisheye[2] = fisheye(d[2]); 
+                            d.fisheye[2] = fisheye(d[2]);
                             d.fisheyed = (d[0].isfriend * d.fisheye[0].z + d.fisheye[2].z > 2)})
         .attr("d", function(d) {
             return d.fisheyed || d.selected ?  "M" + d.fisheye[0].x + "," + d.fisheye[0].y
@@ -239,9 +240,9 @@ d3.json("fdg.json", function(error, graph) {
                                + "S" + d[1].x + "," + d[1].y
                                + " " + d[2].x + "," + d[2].y;
             })
-    
+
     update_link_style()
-     
+
 
     node.each(function(d) { d.fisheye = fisheye(d);
                             d.fisheyed = (d.fisheye.z !== 1); })
@@ -274,7 +275,7 @@ d3.json("fdg.json", function(error, graph) {
   svg.on("mouseleave", function() {
     stroke_opacity = function(d) { return 0.3 * d[0].isfriend }
     minrad = 0
-    
+
       var el = d3.selectAll(".root")
       el.attr("selected", color(sel_idx))
         .style("stroke", color(sel_idx))
